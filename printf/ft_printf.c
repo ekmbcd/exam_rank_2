@@ -31,20 +31,26 @@ int		ft_strlen(char *str)
 	return (len);
 }
 
+int isnum(char c)
+{
+	if (c >= '0' && c <= '9')
+		return 1;
+	return 0;
+}
+
 //used to copy string in case of %s
-size_t	ft_strcpy(char *dst, const char *src)
+void	ft_strcpy(char *dst,  char *src)
 {
 	int	index = 0;
 
 	if (!dst && !src)
-		return (0);
+		return ;
 	while (src[index])
 	{
 		dst[index] = src[index];
 		index++;
 	}
 	dst[index] = 0;
-	return (index);
 }
 
 void	ft_printchar(char c)
@@ -54,32 +60,8 @@ void	ft_printchar(char c)
 	ret++;
 }
 
-//adds zeros before numbers (if precision > len)
-int		add_zero(int len)
-{
-	int		i = 0;
-	int		j = 0;
-	char	*tmp;
-
-	tmp = malloc(precision + 1);
-	//puts (precision - len) zeros at the start
-	while ((i + len) < precision)
-		tmp[i++] = '0';
-	//copy the old number
-	while (save[j])
-		tmp[i++] = save[j++];
-	//remember to terminate
-	tmp[i] = 0;
-	//free the old string (if it exists)
-	if (save)
-		free(save);
-	//put the new string in the global
-	save = tmp;
-	return (0);
-}
-
 //utoa used to transform all numbers in strings
-char	*utoa_base(unsigned int n, const char *base)
+char	*utoa_base(unsigned int n, char *base)
 {
 	//len starts at 1
 	int				len = 1;
@@ -102,16 +84,12 @@ char	*utoa_base(unsigned int n, const char *base)
 }
 
 //atoi used to get width and precision
-unsigned int		ft_atoi(const char *n)
+int ft_atoi(char *s)
 {
-	unsigned int	nb = 0;
-
-	while (*n <= '9' && *n >= '0')
-	{
-		nb = nb * 10 + (*n - '0');
-		n++;
-	}
-	return (nb);
+	int n = 0, i = 0;
+	while(isnum(s[i]))
+		n = n * 10 + s[i++] - '0';
+	return n;
 }
 
 
@@ -126,17 +104,40 @@ void	init(void)
 	save = 0;
 }
 
-int		printword(int len)
+//adds zeros before numbers (if precision > len)
+void		add_zero(int len)
+{
+	int		i = 0;
+	int		j = 0;
+	char	*tmp;
+
+	tmp = malloc(precision + 1);
+	//puts (precision - len) zeros at the start
+	while ((i + len) < precision)
+		tmp[i++] = '0';
+	//copy the old number
+	while (save[j])
+		tmp[i++] = save[j++];
+	//remember to terminate
+	tmp[i] = 0;
+	//free the old string (if it exists)
+	if (save)
+		free(save);
+	//put the new string in the global
+	save = tmp;
+}
+
+void		printword(int len)
 {
 	int i;
 
 	i = 0;
 	//we have a number with precision > len -> add zeroes
-	if (!(is_str) && checkp && precision > len)
+	if (!(is_str) && precision > len)
 	{
 		add_zero(len);
 		//update len
-		len = ft_strlen(save);
+		len = precision;
 	}
 	//after we have correct len, start printing spaces
 	while (len < width)
@@ -149,56 +150,37 @@ int		printword(int len)
 		ft_printchar('-');
 	//start printing our saved string
 	while ((save)[i])
-	{
-		//stop printing when i == precision (if it's "0" or not a number)
-		if ((checkp && i == precision) && (is_str ||
-			(*save == '0' && *(save + 1) == 0)))
-			break ;
 		ft_printchar((save)[i++]);
-	}
-	return (0);
 }
 
-int		prepare_print(void)
+void		prepare_print(void)
 {
 	int len;
 
 	len = ft_strlen(save);
 	//cut string if necessary ("0" with precision 0 gets cut)
 	if (checkp && precision < len && (is_str || (*save == '0' && *(save + 1) == 0)))
+	{
 		len = precision;
+		save[len] = 0;
+	}
 	//if we need to print '-' we put one less space
 	if (negative)
 		width -= 1;
 	printword(len);
-	return (0);
 }
 
 
 //if string pointer is null print "(null)"
-int		printnull(void)
+void		printnull(void)
 {
-	//if precision exists and < 6 print nothing
-	if(checkp && precision < 6)
-	{
-		save = malloc(1);
-		save[0] = 0;
-		return 0;
-	}
 	//all strings need to be malloced
 	save = malloc(7);
-	save[0] = '(';
-	save[1] = 'n';
-	save[2] = 'u';
-	save[3] = 'l';
-	save[4] = 'l';
-	save[5] = ')';
-	save[6] = 0;
-	return (0);
+	ft_strcpy(save, "(null)");
 }
 
 
-int	d_case(const char **s)
+void	d_case( char **s)
 {
 	int n;
 
@@ -215,10 +197,9 @@ int	d_case(const char **s)
 	prepare_print();
 	//skip the 'd'
 	(*s)++;
-	return (0);
 }
 
-int	s_case(const char **s)
+void	s_case( char **s)
 {
 	char *tmp;
 
@@ -236,10 +217,9 @@ int	s_case(const char **s)
 	prepare_print();
 	//skip the 's'
 	(*s)++;
-	return (0);
 }
 
-int	x_case(const char **s)
+void	x_case( char **s)
 {
 	int n;
 
@@ -250,34 +230,23 @@ int	x_case(const char **s)
 	prepare_print();
 	//skip the 'x'
 	(*s)++;
-	return (0);
 }
 
-int	base_case(const char **s)
+void	base_case( char **s)
 {
 	//case s, d or x
 	if (**s == 's')
-	{
-		if (s_case(s) == -1)
-			return (-1);
-	}
+		s_case(s);
 	else if (**s == 'd')
-	{
-		if (d_case(s) == -1)
-			return (-1);
-	}
+		d_case(s);
 	else if (**s == 'x')
-	{
-		if (x_case(s) == -1)
-			return (-1);
-	}
+		x_case(s);
 	//REMEMBER to free after printing
 	if (save)
 		free(save);
-	return (0);
 }
 
-int	width_case(const char **s)
+void	width_case( char **s)
 {
 	//there are numbers
 	if (**s >= '0' && **s <= '9')
@@ -286,12 +255,10 @@ int	width_case(const char **s)
 		//skip width after reading it
 		while (**s >= '0' && **s <= '9')
 			(*s)++;
-		return (1);
 	}
-	return (0);
 }
 
-int	precision_case(const char **s)
+void	precision_case( char **s)
 {
 	//there is precision
 	if (**s == '.')
@@ -306,23 +273,19 @@ int	precision_case(const char **s)
 			//skip the precision after reading it
 			while ((**s >= '0' && **s <= '9'))
 				(*s)++;
-			return (1);
 		}
 	}
-	return (0);
 }
 
-int		percentagecase(const char **s)
+void	percentagecase( char **s)
 {
 	//reset globals
 	init();
 	//get width and precision
-	while (width_case(s) || precision_case(s))
-		;
+	width_case(s);
+	precision_case(s);
 	//convert and print the variable
-	if (base_case(s) == -1)
-		return (-1);
-	return (0);
+	base_case(s);
 }
 
 int		ft_printf(const char *s, ...)
@@ -340,8 +303,7 @@ int		ft_printf(const char *s, ...)
 			//skip the %
 			s++;
 			//remember to pass the address (to move the pointer)
-			if (percentagecase(&s) == -1)
-				return -1;
+			percentagecase((char **)&s);
 		}
 		//else just print the char
 		else
@@ -354,4 +316,3 @@ int		ft_printf(const char *s, ...)
 	va_end(args);
 	return (ret);
 }
- 
